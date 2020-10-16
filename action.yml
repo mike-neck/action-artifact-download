@@ -29,7 +29,17 @@ runs:
           -H "authorization: token ${TOKEN}" \
           -H "accept: application/vnd.github.v3+json" \
           "https://api.github.com/repos/${REPO}/actions/runs?branch=${BRANCH}" | \
-        jq -r 
+        jq -r "
+          .workflow_runs|
+          map(select(.conclusion == \"success\")) |
+          .[] |
+          [.id, .head_sha, .created_at] |
+          @tsv
+        " | \
+        head -n 1 | \
+        while read id sha created_time ; do
+          # TODO
+        done
       env:
         REPO: "${{ inputs.owner }}/${{ inputs.repo-name }}"
         BRANCH: ${{ inputs.branch }}
