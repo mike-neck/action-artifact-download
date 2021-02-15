@@ -1,0 +1,46 @@
+name: action-artifact-download
+description: 'Downloads a latest github runs artifacts'
+branding:
+  icon: download
+  color: white
+inputs:
+  token:
+    description: "github token (needs repo, actions:read)"
+    required: true
+  owner:
+    description: repository owner
+    required: true
+  repo-name:
+    description: repository name
+    required: true
+  branch:
+    description: github runs branch
+    required: true
+  run-conclusion:
+    description: "expected result of workflow run(available values: success, failure), default: success"
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: list workflow runs for a repository
+      shell: bash
+      run: |
+        curl -s \
+          -H "authorization: token ${TOKEN}" \
+          -H "accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${REPO}/actions/runs?branch=${BRANCH}" | \
+        jq -r "
+          .workflow_runs|
+          map(select(.conclusion == \"success\")) |
+          .[] |
+          [.id, .head_sha, .created_at] |
+          @tsv
+        " | \
+        head -n 1 | \
+        while read id sha created_time ; do
+          # TODO
+        done
+      env:
+        REPO: "${{ inputs.owner }}/${{ inputs.repo-name }}"
+        BRANCH: ${{ inputs.branch }}
+        TOKEN: ${{ inputs.token }}
